@@ -2668,3 +2668,225 @@ void GFXcanvas16::drawFastRawHLine(int16_t x, int16_t y, int16_t w,
     buffer[i] = color;
   }
 }
+
+/**********************************************************************/
+/*!
+	 @brief Draw a PROGMEM-resident 16-bit image (RGB 5/6/5) at the specified (x,y)
+			position.  For 16-bit display devices; no color reduction performed.
+			the position and the clipping rectangle are given in the virtual display coordinates.
+
+	@param		scrn_offset_x: virtual's display x offset position
+	@param		scrn_offset_y: virtual's display y offset position
+	@param		x: bitmap's x position in the virtual display
+	@param		y: bitmap's y position in the virtual display
+	@param		bitmap: bitmap's data in PROGMEM
+	@param		trasparentColor: this color if matched in the bitmap will not be drawn in the display
+	@param		w: bitmap's width
+	@param		h: bitmap's height
+	@param		clip_x: clipping rectangle x position in the virtual display
+	@param		clip_y: clipping rectangle y position in the virtual display
+	@param		clip_w: clipping rectangle width in the virtual display
+	@param		clip_h: clipping rectangle height in the virtual display
+*/
+/**********************************************************************/
+void Adafruit_GFX::drawRGBBitmapTransparentColor(const int16_t scrn_offset_x,
+		const int16_t scrn_offset_y, const int16_t x, const int16_t y,
+		const uint16_t bitmap[], const uint16_t trasparentColor,
+		const int16_t w, const int16_t h, const int16_t clip_x,
+		const int16_t clip_y, const int16_t clip_w, const int16_t clip_h) {
+	// adjust the clipping rectangle to real display's coordinates
+	int16_t clip_x1;
+	int16_t clip_x2;
+	int16_t clip_y1;
+	int16_t clip_y2;
+	if (!adjustClippingRectangleToRealDisplay(scrn_offset_x, scrn_offset_y,
+			width(),height(), clip_x, clip_y, clip_w, clip_h,
+            clip_x1, clip_y1, clip_x2, clip_y2))
+		return; //clipping rectangle not valid
+
+	//check if inside cippling range
+    int16_t x1 = x - scrn_offset_x;
+    if(x1 + w < clip_x1 || x1 > clip_x2)
+		return;
+    int16_t y1 = y  - scrn_offset_y;
+    if(y1 + h < clip_y1 || y1 > clip_y2)
+		return;
+
+
+    int16_t x2; //bitmap's X lower right position in real display's coordinate.
+    int16_t y2; //bitmap's Y lower right position in real display's coordinate.
+    int16_t bx; //bitmap's X upper left position to start drawing.
+    int16_t by; //bitmap's Y upper left position to start drawing.
+    int16_t bw; //bitmap's width to draw.
+    int16_t bh; //bitmap's height to draw.
+
+    calcBitmapDrawingLimits(w, h, x1, y1, x2, y2, clip_x1, clip_y1, clip_x2,
+            clip_y2, bx, by, bw, bh);
+
+    for(int16_t j=0; j<bh; j++, y1++){
+        for(int16_t i=0; i<bw; i++){
+            auto c = pgm_read_word(&bitmap[w*(j+by)+bx+i]);
+			if(c != trasparentColor)
+				writePixel(x1+i, y1, c);
+		}
+    }
+}
+
+/**********************************************************************/
+/*!
+	 @brief Erase a previously drawn PROGMEM-resident 16-bit image (RGB 5/6/5) at the specified (x,y)
+			position.  For 16-bit display devices; no color reduction performed.
+			the position and the clipping rectangle are given in the virtual display coordinates.
+
+	@param		scrn_offset_x: virtual's display x offset position
+	@param		scrn_offset_y: virtual's display y offset position
+	@param		x: bitmap's x position in the virtual display
+	@param		y: bitmap's y position in the virtual display
+	@param		bitmap: bitmap's data in PROGMEM
+	@param		trasparentColor: this color if matched in the bitmap will not be drawn in the display
+	@param		w: bitmap's width
+	@param		h: bitmap's height
+	@param		clip_x: clipping rectangle x position in the virtual display
+	@param		clip_y: clipping rectangle y position in the virtual display
+	@param		clip_w: clipping rectangle width in the virtual display
+	@param		clip_h: clipping rectangle height in the virtual display
+	@param		ereaseColor: the color to be drawn if the bitmap color is not transparent color
+*/
+/**********************************************************************/
+void Adafruit_GFX::eraseRGBBitmapTransparentColor(const int16_t scrn_offset_x,
+		const int16_t scrn_offset_y, const int16_t x, const int16_t y,
+		const uint16_t bitmap[], const uint16_t trasparentColor,
+		const int16_t w, const int16_t h, const int16_t clip_x,
+		const int16_t clip_y, const int16_t clip_w, const int16_t clip_h,
+		const uint16_t eraseColor) {
+    // adjust the clipping rectangle to real display's coordinates
+    int16_t clip_x1; // Left upper real clipping rectagle's x value
+    int16_t clip_x2; // Left upper real clipping rectagle's y value
+    int16_t clip_y1; // Right lower real clipping rectagle's x value
+    int16_t clip_y2; // Right lower real clipping rectagle's y value
+    if (!adjustClippingRectangleToRealDisplay(scrn_offset_x, scrn_offset_y,
+            width(), height(), clip_x, clip_y, clip_w, clip_h,
+            clip_x1, clip_y1, clip_x2, clip_y2))
+        return; //clipping rectangle not valid. Falls outside the real display coordinates.
+
+    int16_t x1; // X coordinate in display real value to place the bitmap
+    x1 = x - scrn_offset_x;
+    //check if inside cippling range
+    if(x1 + w < clip_x1 || x1 > clip_x2)
+        return; //Position coordinate not valid. Falls outside the real display coordinates.
+
+    int16_t y1; // Y coordinate in display real value to place the bitmap
+    y1 = y  - scrn_offset_y;
+    //check if inside cippling range
+    if(y1 + h < clip_y1 || y1 > clip_y2)
+        return; //Position coordinate not valid. Falls outside the real display coordinates.
+
+
+    int16_t x2; //bitmap's X lower right position in real display's coordinate.
+    int16_t y2; //bitmap's Y lower right position in real display's coordinate.
+    int16_t bx; //bitmap's X upper left position to start drawing.
+    int16_t by; //bitmap's Y upper left position to start drawing.
+    int16_t bw; //bitmap's width to draw.
+    int16_t bh; //bitmap's height to draw.
+
+    calcBitmapDrawingLimits(w, h, x1, y1, x2, y2, clip_x1, clip_y1, clip_x2,
+            clip_y2, bx, by, bw, bh);
+
+    for(int16_t j=0; j<bh; j++, y1++){
+        for(int16_t i=0; i<bw; i++){
+            auto c = pgm_read_word(&bitmap[w*(j+by)+bx+i]);
+            if(c != trasparentColor)
+                writePixel(x1+i, y1, eraseColor);
+        }
+    }
+}
+
+/**********************************************************************/
+/*!
+	 @brief Calculates the drawing limits in display'ś real coordinates.
+	 	 	 Also, calculates the portion of the bitmap that falls inside the clipping rectangle.
+
+	 @param		w: bitmap's width
+	 @param		h: bitmap's height
+	 @param		x1: bitmap's X upper left position in real display's coordinate. Modified by referenced value.
+	 @param		y1: bitmap's Y upper left position in real display's coordinate. Modified by referenced value.
+	 @param		x2: bitmap's X lower right position in real display's coordinate. Modified by referenced value.
+	 @param		y2: bitmap's Y lower right position in real display's coordinate. Modified by referenced value.
+	 @param		clip_x1: Left upper real clipping rectagle's x value. Modified by referenced value.
+	 @param		clip_x2: Left upper real clipping rectagle's y value. Modified by referenced value.
+	 @param		clip_y1: Right lower real clipping rectagle's x value. Modified by referenced value.
+	 @param		clip_y2: Right lower real clipping rectagle's y value. Modified by referenced value.
+	 @param		bx: bitmap's X upper left position to start drawing. Modified by referenced value.
+	 @param		by: bitmap's Y upper left position to start drawing. Modified by referenced value.
+	 @param		bw: bitmap's width to draw. Modified by referenced value.
+	 @param		bh: bitmap's height to draw. Modified by referenced value.
+*/
+/**********************************************************************/
+void Adafruit_GFX::calcBitmapDrawingLimits(const int16_t w, const int16_t h,
+		int16_t &x1, int16_t &y1, int16_t &x2, int16_t &y2, int16_t &clip_x1,
+		int16_t &clip_y1, int16_t &clip_x2, int16_t &clip_y2, int16_t &bx,
+		int16_t &by, int16_t &bw, int16_t &bh) {
+
+    x2 = x1 + w;
+    y2 = y1 + h;
+    bx = x1 < clip_x1 ? clip_x1 - x1 : 0;
+    by = y1 < clip_y1 ? clip_y1 - y1 : 0;
+    if (x1 < clip_x1)
+        x1 = clip_x1;
+
+    if (y1 < clip_y1)
+        y1 = clip_y1;
+
+    if (x2 > clip_x2)
+        x2 = clip_x2;
+
+    if (y2 > clip_y2)
+        y2 = clip_y2;
+
+    bw = x2 - x1;
+    bh = y2 - y1;
+
+}
+
+/**********************************************************************/
+/*!
+	 @brief Calculate the clipping rectangle in the real display coordinates
+
+	 @param		scrn_offset_x: virtual's display x offset position
+	 @param		scrn_offset_y: virtual's display y offset position
+	 @param		scrn_w: virtual's display width
+	 @param		scrn_h: virtual's display height
+	 @param		clip_x: clip rectangle x position in the virtual display
+	 @param		clip_y: clip rectangle y position in the virtual display
+	 @param		clip_w: clip rectangle width in the virtual display
+	 @param		clip_h: clip rectangle height in the virtual display
+
+	 @param		int16_t clip_x1: Left upper real clipping rectagle's x value. Modified by referenced value.
+	 @param		int16_t clip_x2: Left upper real clipping rectagle's y value. Modified by referenced value.
+	 @param		int16_t clip_y1: Right lower real clipping rectagle's x value. Modified by referenced value.
+	 @param		int16_t clip_y2: Right lower real clipping rectagle's y value. Modified by referenced value.
+
+	 @Returns true if the clipping rectangle falls within the real display coordinates.
+*/
+/**********************************************************************/
+bool Adafruit_GFX::adjustClippingRectangleToRealDisplay(
+		const int16_t scrn_offset_x, const int16_t scrn_offset_y,
+		const int16_t scrn_w, const int16_t scrn_h, const int16_t clip_x,
+		const int16_t clip_y, const int16_t clip_w, const int16_t clip_h,
+		int16_t &clip_x1, int16_t &clip_y1, int16_t &clip_x2,
+		int16_t &clip_y2) {
+	// adjust the clipping rectangle to real display's coordinates
+    clip_x1 = clip_x - scrn_offset_x;
+    clip_y1 = clip_y - scrn_offset_y;
+
+    clip_x2 = clip_x1 + clip_w;
+    clip_y2 = clip_y1 + clip_h;
+
+    if(clip_x1 < 0) clip_x1 = 0;
+    if(clip_y1 < 0) clip_y1 = 0;
+
+    if(clip_x2 > scrn_w) clip_x2 = scrn_w;
+    if(clip_y2 > scrn_h) clip_y2 = scrn_h;
+
+    return (clip_x1 < clip_x2) && (clip_y1 < clip_y2);
+}

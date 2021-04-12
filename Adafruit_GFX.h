@@ -226,6 +226,90 @@ public:
   /************************************************************************/
   int16_t getCursorY(void) const { return cursor_y; };
 
+
+  /**********************************************************************/
+  /*!
+ 	 @brief Calculate the clipping rectangle in the real display coordinates
+
+	 @param		scrn_offset_x: virtual's display x offset position
+	 @param		scrn_offset_y: virtual's display y offset position
+	 @param		scrn_w: virtual's display width
+	 @param		scrn_h: virtual's display height
+	 @param		clip_x: clip rectangle x position in the virtual display
+	 @param		clip_y: clip rectangle y position in the virtual display
+	 @param		clip_w: clip rectangle width in the virtual display
+	 @param		clip_h: clip rectangle height in the virtual display
+
+	 @param		int16_t clip_x1: Left upper real clipping rectagle's x value. Modified by referenced value.
+	 @param		int16_t clip_x2: Left upper real clipping rectagle's y value. Modified by referenced value.
+	 @param		int16_t clip_y1: Right lower real clipping rectagle's x value. Modified by referenced value.
+	 @param		int16_t clip_y2: Right lower real clipping rectagle's y value. Modified by referenced value.
+
+	 @Returns true if the clipping rectangle falls within the real display coordinates.
+  */
+  /**********************************************************************/
+	bool adjustClippingRectangleToRealDisplay(const int16_t scrn_offset_x,
+			const int16_t scrn_offset_y, const int16_t scrn_w,
+			const int16_t scrn_h, const int16_t clip_x, const int16_t clip_y,
+			const int16_t clip_w, const int16_t clip_h, int16_t &clip_x1,
+			int16_t &clip_y1, int16_t &clip_x2, int16_t &clip_y2);
+
+/**********************************************************************/
+/*!
+	 @brief Draw a PROGMEM-resident 16-bit image (RGB 5/6/5) at the specified (x,y)
+			position.  For 16-bit display devices; no color reduction performed.
+			the position and the clipping rectangle are given in the virtual display coordinates.
+
+	@param		scrn_offset_x: virtual's display x offset position
+	@param		scrn_offset_y: virtual's display y offset position
+	@param		x: bitmap's x position in the virtual display
+	@param		y: bitmap's y position in the virtual display
+	@param		bitmap: bitmap's data in PROGMEM
+	@param		trasparentColor: this color if matched in the bitmap will not be drawn in the display
+	@param		w: bitmap's width
+	@param		h: bitmap's height
+	@param		clip_x: clipping rectangle x position in the virtual display
+	@param		clip_y: clipping rectangle y position in the virtual display
+	@param		clip_w: clipping rectangle width in the virtual display
+	@param		clip_h: clipping rectangle height in the virtual display
+*/
+/**********************************************************************/
+void drawRGBBitmapTransparentColor(
+		const int16_t scrn_offset_x, const int16_t scrn_offset_y,
+		const int16_t x, const int16_t y, const uint16_t bitmap[],
+		const uint16_t trasparentColor, const int16_t w, const int16_t h,
+		const int16_t clip_x, const int16_t clip_y, const int16_t clip_w,
+		const int16_t clip_h);
+
+/**********************************************************************/
+/*!
+	 @brief Erase a previously drawn PROGMEM-resident 16-bit image (RGB 5/6/5) at the specified (x,y)
+			position.  For 16-bit display devices; no color reduction performed.
+			the position and the clipping rectangle are given in the virtual display coordinates.
+
+	@param		scrn_offset_x: virtual's display x offset position
+	@param		scrn_offset_y: virtual's display y offset position
+	@param		x: bitmap's x position in the virtual display
+	@param		y: bitmap's y position in the virtual display
+	@param		bitmap: bitmap's data in PROGMEM
+	@param		trasparentColor: this color if matched in the bitmap will not be drawn in the display
+	@param		w: bitmap's width
+	@param		h: bitmap's height
+	@param		clip_x: clipping rectangle x position in the virtual display
+	@param		clip_y: clipping rectangle y position in the virtual display
+	@param		clip_w: clipping rectangle width in the virtual display
+	@param		clip_h: clipping rectangle height in the virtual display
+	@param		ereaseColor: the color to be drawn if the bitmap color is not transparent color
+*/
+/**********************************************************************/
+void eraseRGBBitmapTransparentColor(
+		const int16_t scrn_offset_x, const int16_t scrn_offset_y,
+		const int16_t x, const int16_t y, const uint16_t bitmap[],
+		const uint16_t trasparentColor, const int16_t w, const int16_t h,
+		const int16_t clip_x, const int16_t clip_y, const int16_t clip_w,
+		const int16_t clip_h, const uint16_t eraseColor);
+
+
 protected:
   void charBounds(unsigned char c, int16_t *x, int16_t *y, int16_t *minx,
                   int16_t *miny, int16_t *maxx, int16_t *maxy);
@@ -243,6 +327,33 @@ protected:
   bool wrap;            ///< If set, 'wrap' text at right edge of display
   bool _cp437;          ///< If set, use correct CP437 charset (default is off)
   GFXfont *gfxFont;     ///< Pointer to special font
+
+
+  /**********************************************************************/
+  /*!
+  	 @brief Calculates the drawing limits in display'ś real coordinates.
+  	 	 	 Also, calculates the portion of the bitmap that falls inside the clipping rectangle.
+
+  	 @param		w: bitmap's width
+  	 @param		h: bitmap's height
+  	 @param		x1: bitmap's X upper left position in real display's coordinate. Modified by referenced value.
+  	 @param		y1: bitmap's Y upper left position in real display's coordinate. Modified by referenced value.
+  	 @param		x2: bitmap's X lower right position in real display's coordinate. Modified by referenced value.
+  	 @param		y2: bitmap's Y lower right position in real display's coordinate. Modified by referenced value.
+  	 @param		clip_x1: Left upper real clipping rectagle's x value. Modified by referenced value.
+  	 @param		clip_x2: Left upper real clipping rectagle's y value. Modified by referenced value.
+  	 @param		clip_y1: Right lower real clipping rectagle's x value. Modified by referenced value.
+  	 @param		clip_y2: Right lower real clipping rectagle's y value. Modified by referenced value.
+  	 @param		bx: bitmap's X upper left position to start drawing. Modified by referenced value.
+  	 @param		by: bitmap's Y upper left position to start drawing. Modified by referenced value.
+  	 @param		bw: bitmap's width to draw. Modified by referenced value.
+  	 @param		bh: bitmap's height to draw. Modified by referenced value.
+  */
+  /**********************************************************************/
+	void calcBitmapDrawingLimits(const int16_t w, const int16_t h, int16_t &x1,
+			int16_t &y1, int16_t &x2, int16_t &y2, int16_t &clip_x1,
+			int16_t &clip_y1, int16_t &clip_x2, int16_t &clip_y2, int16_t &bx,
+			int16_t &by, int16_t &bw, int16_t &bh);
 };
 
 /// A simple drawn button UI element
@@ -389,10 +500,13 @@ public:
   /**********************************************************************/
   uint16_t *getBuffer(void) const { return buffer; }
 
+
 protected:
   uint16_t getRawPixel(int16_t x, int16_t y) const;
   void drawFastRawVLine(int16_t x, int16_t y, int16_t h, uint16_t color);
   void drawFastRawHLine(int16_t x, int16_t y, int16_t w, uint16_t color);
+
+
 
 private:
   uint16_t *buffer;
